@@ -134,7 +134,8 @@ class pmed():
         results = []
         try:
             for (s,d) in self.Thresh:
-                if self.assign_areas[(s,d)].varValue == 1.0:
+                # Making approximate against potential floating point low values
+                if self.assign_areas[(s,d)].varValue >= 0.98:
                     results.append((s,d,self.Di[s][d],self.Ca[d],self.Ca[d]*self.Di[s][d]))
             results_df = pd.DataFrame(results,columns=['Source','Dest','Dist','Calls','DWeightCalls'])
             self.pairs = results_df
@@ -153,7 +154,7 @@ class pmed():
         total_merge = (geo_mer['check_merge'] == 'both').sum()
         if total_merge != geo_map.shape[0]:
             print('Check the pairs/merge, not all are merged into basemap')
-            print( geo_merge['check_merge'].value_counts() )
+            print( geo_mer['check_merge'].value_counts() )
         # making centroid object for source and dissolve object
         source_locs = geo_mer[geo_mer['Source'] == geo_mer['Dest']].copy()
         diss_areas = geo_mer.dissolve(by='Source',aggfunc='sum')
@@ -211,11 +212,11 @@ class pmed():
 ###############################################################
 # Loading in the data
 
-data_loc = r'D:\Dropbox\Dropbox\PublicCode_Git\PatrolRedistrict\PatrolRedistrict\DataCreated\fin_obj.pkl'
+data_loc = r'D:\Dropbox\Dropbox\PublicCode_Git\PatrolRedistrict\DataCreated\fin_obj.pkl'
 areas, dist_dict, cont_dict, call_dict, nid_invmap, MergeData = pickle.load(open(data_loc,"rb"))
 
 # shapefile for reporting areas
-carr_report = gpd.read_file(r'D:\Dropbox\Dropbox\PublicCode_Git\PatrolRedistrict\PatrolRedistrict\DataOrig\ReportingAreas.shp')
+carr_report = gpd.read_file(r'D:\Dropbox\Dropbox\PublicCode_Git\PatrolRedistrict\DataOrig\ReportingAreas.shp')
 
 ###############################################################
 
@@ -226,7 +227,7 @@ tl = 3*60*60
 
 pmed12 = pmed(Ar=areas,Di=dist_dict,Co=cont_dict,Ca=call_dict,Ta=12,In=0.1,Th=10)
 pmed12.solve(solver=pulp.CPLEX(timeLimit=tl,msg=True))     # takes around 10 minutes
-#pmed12.solve(solver=pulp.SCIP_CMD(timeLimit=tl,msg=True)) # takes about 5 hours to get the solution
+#pmed12.solve(solver=pulp.SCIP_CMD(msg=True)) # takes about 5 hours to get the solution
 #pmed12.solve(solver=pulp.GLPK_CMD(timeLimit=tl,msg=True)) # does not converge even after 12+ hours
 
 # Showing a map
